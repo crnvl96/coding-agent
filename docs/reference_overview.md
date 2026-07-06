@@ -14,8 +14,8 @@ Every file is a standalone Go program with the **same skeleton**:
 main()                    → wiring: CLI flags, client, tools, agent
   ├── Agent.Run()         → event loop (the "heartbeat")
   │     ├── read user input
-  │     ├── runInference() → call Claude API with conversation + tools
-  │     └── tool loop      → if Claude returns tool_use blocks:
+  │     ├── runInference() → call LLM API with conversation + tools
+  │     └── tool loop      → if LLM returns tool_use blocks:
   │           ├── match tool by name
   │           ├── execute tool function
   │           └── send results back → repeat inference
@@ -90,12 +90,15 @@ Deliberately no `package agent` or shared library. Each `.go` file is a complete
 **4. Verbose mode (`--verbose`)**
 Every file has identical verbose logging wired through `log.SetOutput(os.Stderr)` vs `os.Stdout`. This is a debugging teaching tool — it lets you see the exact API calls, tool executions, and conversation flow.
 
-**5. Anthropic SDK usage**
+**5. Anthropic SDK usage (LLM-agnostic via Anthropic-compatible API)**
 
-- Model: `claude-opus-4-6` (hardcoded)
-- `anthropic.NewClient()` reads `ANTHROPIC_API_KEY` from env
+- Model: `claude-opus-4-6` (hardcoded) — auto-mapped by compatible providers
+- Primary backend: DeepSeek via `https://api.deepseek.com/anthropic` (Anthropic-compatible endpoint)
+- `anthropic.NewClient()` reads `ANTHROPIC_API_KEY` from env (set to your DeepSeek key)
+- Custom base URL via `option.WithBaseURL()` or `ANTHROPIC_BASE_URL` env var
 - Conversation is a `[]anthropic.MessageParam` slice that grows unbounded (no context window management)
 - Max tokens: 1024 (quite small for a coding agent)
+- See [`docs/deepseek.md`](./deepseek.md) for full integration guide
 
 ---
 
@@ -103,19 +106,34 @@ Every file has identical verbose logging wired through `log.SetOutput(os.Stderr)
 
 The workshop deliberately stops at the "toy agent" level. Here's what a **real** coding agent would need beyond this:
 
-| Missing piece                 | Why it matters                                                            |
-| ----------------------------- | ------------------------------------------------------------------------- |
-| **Shared library**            | Agent loop and tool system duplicated 6 times — needs extraction          |
-| **System prompt**             | No system message controlling agent behavior, personality, or safety      |
-| **Context window management** | Conversation grows forever, no truncation or summarization                |
-| **Tool output size limits**   | Claude gets raw unfiltered tool output; real agents truncate aggressively |
-| **Streaming**                 | No SSE/streaming — user waits for full response                           |
-| **Error recovery**            | `panic(err)` on JSON unmarshal failures; no retry logic                   |
-| **Safety/sandboxing**         | `bash` tool runs arbitrary commands with no restrictions                  |
-| **Multi-model support**       | Hardcoded to Claude Opus 4.6                                              |
-| **File watching / LSP**       | No language server integration for semantic understanding                 |
-| **Persistent memory**         | No cross-session memory or project indexing                               |
-| **Git awareness**             | No git diff, branch awareness, or safe git operations                     |
+| Missing piece                 | Why it matters                                                                                                                                                     |
+| ----------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| **Shared library**            | Agent loop and tool system duplicated 6 times — needs extraction                                                                                                   |
+| **System prompt**             | No system message controlling agent behavior, personality, or safety                                                                                               |
+| **Context window management** | Conversation grows forever, no truncation or summarization                                                                                                         |
+| **Tool output size limits**   | Claude gets raw unfiltered tool output; real agents truncate aggressively                                                                                          |
+| **Streaming**                 | No SSE/streaming — user waits for full response                                                                                                                    |
+| **Error recovery**            | `panic(err)` on JSON unmarshal failures; no retry logic                                                                                                            |
+| **Safety/sandboxing**         | `bash` tool runs arbitrary commands with no restrictions                                                                                                           |
+| **Multi-model support**       | Hardcoded to Claude Opus 4.6 — but Anthropic-compatible API means any provider with that endpoint works (DeepSeek, etc.). See [`docs/deepseek.md`](./deepseek.md). |
+| **File watching / LSP**       | No language server integration for semantic understanding                                                                                                          |
+| **Persistent memory**         | No cross-session memory or project indexing                                                                                                                        |
+| **Git awareness**             | No git diff, branch awareness, or safe git operations                                                                                                              |
+
+---
+
+### 🔄 LLM Backend: DeepSeek via Anthropic-Compatible API
+
+Instead of Anthropic Claude, this project uses **DeepSeek** as the LLM backend. DeepSeek provides an Anthropic-compatible API at `https://api.deepseek.com/anthropic`, meaning the existing `anthropic-sdk-go` code works **unchanged** — only the base URL and API key change.
+
+Key advantages:
+
+- **No SDK changes**: Same `anthropic.Client`, same tool format, same message protocol
+- **Auto model mapping**: `claude-opus-*` → `deepseek-v4-pro`, `claude-haiku/sonnet-*` → `deepseek-v4-flash`
+- **1M token context**: vs Claude's 200K — more room for the workshop's unbounded conversation pattern
+- **~96% cheaper**: ~$0.88/M output vs Claude Opus ~$75/M
+
+For setup instructions and compatibility details, see [`docs/deepseek.md`](./deepseek.md).
 
 ---
 
