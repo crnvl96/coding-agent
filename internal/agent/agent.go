@@ -8,14 +8,17 @@ import (
 	"github.com/anthropics/anthropic-sdk-go"
 )
 
-// Agent holds the Anthropic client and conversation state.
+const (
+	// defaultModel is the LLM model used when none is explicitly configured.
+	defaultModel = "deepseek-v4-pro"
+)
+
 type Agent struct {
 	client         *anthropic.Client
 	getUserMessage func() (string, bool)
 	verbose        bool
 }
 
-// NewAgent creates a new Agent.
 func NewAgent(
 	client *anthropic.Client,
 	getUserMessage func() (string, bool),
@@ -28,14 +31,13 @@ func NewAgent(
 	}
 }
 
-// Run starts the agent's event loop: read input → infer → print response → repeat.
 func (a *Agent) Run(ctx context.Context) error {
 	conversation := []anthropic.MessageParam{}
 
 	if a.verbose {
 		log.Println("Starting chat session")
 	}
-	fmt.Println("Chat with Claude (use 'ctrl-c' to quit)")
+	fmt.Println("Chat with AI (use 'ctrl-c' to quit)")
 
 	for {
 		fmt.Print("\u001b[94mYou\u001b[0m: ")
@@ -62,7 +64,7 @@ func (a *Agent) Run(ctx context.Context) error {
 		conversation = append(conversation, userMessage)
 
 		if a.verbose {
-			log.Printf("Sending message to Claude, conversation length: %d", len(conversation))
+			log.Printf("Sending inference request, conversation length: %d", len(conversation))
 		}
 
 		message, err := a.runInference(ctx, conversation)
@@ -75,13 +77,13 @@ func (a *Agent) Run(ctx context.Context) error {
 		conversation = append(conversation, message.ToParam())
 
 		if a.verbose {
-			log.Printf("Received response from Claude with %d content blocks", len(message.Content))
+			log.Printf("Received response with %d content blocks", len(message.Content))
 		}
 
 		for _, content := range message.Content {
 			switch content.Type {
 			case "text":
-				fmt.Printf("\u001b[93mClaude\u001b[0m: %s\n", content.Text)
+				fmt.Printf("\u001b[93mAI\u001b[0m: %s\n", content.Text)
 			}
 		}
 	}
@@ -92,14 +94,13 @@ func (a *Agent) Run(ctx context.Context) error {
 	return nil
 }
 
-// runInference calls the Messages API.
 func (a *Agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
 	if a.verbose {
-		log.Printf("Making API call to Claude with model: %s", anthropic.ModelClaudeOpus4_6)
+		log.Printf("Making API call with model: %s", defaultModel)
 	}
 
 	message, err := a.client.Messages.New(ctx, anthropic.MessageNewParams{
-		Model:     anthropic.ModelClaudeOpus4_6,
+		Model:     defaultModel,
 		MaxTokens: int64(4096),
 		Messages:  conversation,
 	})
