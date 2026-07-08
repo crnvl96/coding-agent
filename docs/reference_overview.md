@@ -87,10 +87,7 @@ Tools are **generic** — they receive raw JSON and return strings. The `Generat
 **3. Single-file, no shared code**
 Deliberately no `package agent` or shared library. Each `.go` file is a complete program. This forces you to internalize every part of the architecture by reading and modifying it directly. For your own agent, you'd refactor the shared Agent/Run/runInference code into a reusable package.
 
-**4. Verbose mode (`--verbose`)**
-Every file has identical verbose logging wired through `log.SetOutput(os.Stderr)` vs `os.Stdout`. This is a debugging teaching tool — it lets you see the exact API calls, tool executions, and conversation flow.
-
-**5. Anthropic SDK usage (LLM-agnostic via Anthropic-compatible API)**
+**4. Anthropic SDK usage (LLM-agnostic via Anthropic-compatible API)**
 
 - Model: `claude-opus-4-6` (hardcoded) — auto-mapped by compatible providers
 - Primary backend: DeepSeek via `https://api.deepseek.com/anthropic` (Anthropic-compatible endpoint)

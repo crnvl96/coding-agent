@@ -139,30 +139,6 @@ go run code_search_tool.go
 
 ---
 
-## 🧪 Verification
-
-To verify DeepSeek is being used, enable verbose mode:
-
-```bash
-go run read.go --verbose
-```
-
-You'll see logs like:
-
-```
-Making API call to Claude with model: deepseek-v4-pro and 1 tools
-```
-
-Or with the original code (auto-mapped):
-
-```
-Making API call to Claude with model: claude-opus-4-6 and 1 tools
-```
-
-(DeepSeek maps this to `deepseek-v4-pro` on the server side.)
-
----
-
 ## ⚡ Performance Comparison
 
 | Metric                  | Claude Opus 4.6 | DeepSeek V4 Pro | DeepSeek V4 Flash |
