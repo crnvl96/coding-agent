@@ -3,3 +3,6 @@
 
 # Reference project (standalone repo — not part of this project)
 how-to-build-a-coding-agent/
+
+# Credentials
+auth.json
