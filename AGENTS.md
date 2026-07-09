@@ -2,8 +2,7 @@
 
 ## Go tooling
 
-- **Type checking**: run `gopls check cmd/agent/main.go internal/agent/agent.go` (gopls expects `.go` file paths, not directories).
-- **Static analysis**: run `go vet ./...` — catches shadowed variables, bad printf verbs, unreachable code, and more. Zero config, ships with Go.
+- **Type checking**: run `go vet ./...` — catches shadowed variables, bad printf verbs, unreachable code, and more. Also run `go build ./...` to verify everything compiles.
 - **Formatting**: run `gofumpt -w .` to format all Go source files. Never run plain `go fmt` — always use `gofumpt`.
 
 ## Testing guidelines
