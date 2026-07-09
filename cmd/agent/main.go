@@ -5,6 +5,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"io"
 	"os"
 	"path/filepath"
 
@@ -31,7 +32,7 @@ func main() {
 		return scanner.Text(), true
 	}
 
-	agt := agent.NewAgent(&client, getUserMessage)
+	agt := agent.NewAgent(&client.Messages, getUserMessage)
 
 	if err := agt.Run(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
@@ -44,14 +45,11 @@ type authFile struct {
 	BaseURL string `json:"base_url"`
 }
 
-func loadAuth(path string) ([]option.RequestOption, string) {
-	data, err := os.ReadFile(path)
-	if err != nil {
-		return nil, "env vars"
-	}
-
+// loadAuthFromReader parses auth options from any reader — usable in tests
+// without touching the filesystem.
+func loadAuthFromReader(r io.Reader, source string) ([]option.RequestOption, string) {
 	var a authFile
-	if err := json.Unmarshal(data, &a); err != nil {
+	if err := json.NewDecoder(r).Decode(&a); err != nil {
 		return nil, "env vars"
 	}
 
@@ -66,5 +64,14 @@ func loadAuth(path string) ([]option.RequestOption, string) {
 		opts = append(opts, option.WithBaseURL(a.BaseURL))
 	}
 
-	return opts, filepath.Base(path)
+	return opts, source
+}
+
+func loadAuth(path string) ([]option.RequestOption, string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, "env vars"
+	}
+	defer f.Close()
+	return loadAuthFromReader(f, filepath.Base(path))
 }

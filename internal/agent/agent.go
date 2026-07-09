@@ -5,6 +5,7 @@ import (
 	"fmt"
 
 	"github.com/anthropics/anthropic-sdk-go"
+	"github.com/anthropics/anthropic-sdk-go/option"
 )
 
 const (
@@ -12,13 +13,21 @@ const (
 	defaultModel = "deepseek-v4-pro"
 )
 
+// messageCreator captures the only Anthropic API surface that Agent needs.
+// Accepting a narrow interface instead of *anthropic.Client lets tests swap
+// in a mock with zero network or SDK dependencies.
+type messageCreator interface {
+	New(ctx context.Context, params anthropic.MessageNewParams,
+		opts ...option.RequestOption) (*anthropic.Message, error)
+}
+
 type Agent struct {
-	client         *anthropic.Client
+	client         messageCreator
 	getUserMessage func() (string, bool)
 }
 
 func NewAgent(
-	client *anthropic.Client,
+	client messageCreator,
 	getUserMessage func() (string, bool),
 ) *Agent {
 	return &Agent{
@@ -64,7 +73,7 @@ func (a *Agent) Run(ctx context.Context) error {
 }
 
 func (a *Agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
-	message, err := a.client.Messages.New(ctx, anthropic.MessageNewParams{
+	message, err := a.client.New(ctx, anthropic.MessageNewParams{
 		Model:     defaultModel,
 		MaxTokens: int64(4096),
 		Messages:  conversation,
