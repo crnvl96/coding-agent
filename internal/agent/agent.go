@@ -15,6 +15,9 @@ const (
 	// ANSI escape sequences for terminal colours in the chat prompt.
 	// ansiReset reverts to the default terminal colour after a coloured label.
 	ansiBlue   = "\u001b[94m"
+	ansiGreen  = "\u001b[92m"
+	ansiCyan   = "\u001b[96m"
+	ansiRed    = "\u001b[91m"
 	ansiYellow = "\u001b[93m"
 	ansiReset  = "\u001b[0m"
 )
@@ -27,16 +30,20 @@ type chatCreator interface {
 type agent struct {
 	chat           chatCreator
 	getUserMessage func() (string, bool)
+	tools          []ToolDefinition
 }
 
-// NewAgent creates an Agent with the given message creator and user message input function.
+// NewAgent creates an Agent with the given message creator, user message input function,
+// and tool definitions available to the model.
 func NewAgent(
 	chat chatCreator,
 	getUserMessage func() (string, bool),
+	tools []ToolDefinition,
 ) *agent {
 	return &agent{
 		chat:           chat,
 		getUserMessage: getUserMessage,
+		tools:          tools,
 	}
 }
 
@@ -67,11 +74,58 @@ func (a *agent) Run(ctx context.Context) error {
 		}
 		conversation = append(conversation, message.ToParam())
 
-		for _, content := range message.Content {
-			switch content.Type {
-			case "text":
-				fmt.Printf(ansiYellow+"AI"+ansiReset+": %s\n", content.Text)
+		// Inner loop: process tool calls until the model responds with text only.
+		for {
+			var toolResults []anthropic.ContentBlockParamUnion
+			var hasToolUse bool
+
+			for _, content := range message.Content {
+				switch content.Type {
+				case "text":
+					fmt.Printf(ansiYellow+"AI"+ansiReset+": %s\n", content.Text)
+				case "tool_use":
+					hasToolUse = true
+					toolUse := content.AsToolUse()
+					fmt.Printf(ansiCyan+"tool"+ansiReset+": %s(%s)\n", toolUse.Name, string(toolUse.Input))
+
+					var toolResult string
+					var toolError error
+					var toolFound bool
+					for _, tool := range a.tools {
+						if tool.Name == toolUse.Name {
+							toolFound = true
+							toolResult, toolError = tool.Function(toolUse.Input)
+							break
+						}
+					}
+					if !toolFound {
+						toolError = fmt.Errorf("tool %q not found", toolUse.Name)
+					}
+
+					if toolError != nil {
+						fmt.Printf(ansiRed+"error"+ansiReset+": %s\n", toolError.Error())
+						toolResults = append(toolResults,
+							anthropic.NewToolResultBlock(toolUse.ID, toolError.Error(), true))
+					} else {
+						fmt.Printf(ansiGreen+"result"+ansiReset+": %s\n", toolResult)
+						toolResults = append(toolResults,
+							anthropic.NewToolResultBlock(toolUse.ID, toolResult, false))
+					}
+				}
 			}
+
+			if !hasToolUse {
+				break
+			}
+
+			toolResultMessage := anthropic.NewUserMessage(toolResults...)
+			conversation = append(conversation, toolResultMessage)
+
+			message, err = a.runInference(ctx, conversation)
+			if err != nil {
+				return err
+			}
+			conversation = append(conversation, message.ToParam())
 		}
 	}
 
@@ -79,10 +133,22 @@ func (a *agent) Run(ctx context.Context) error {
 }
 
 func (a *agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
+	anthropicTools := make([]anthropic.ToolUnionParam, len(a.tools))
+	for i, tool := range a.tools {
+		anthropicTools[i] = anthropic.ToolUnionParam{
+			OfTool: &anthropic.ToolParam{
+				Name:        tool.Name,
+				Description: anthropic.String(tool.Description),
+				InputSchema: tool.InputSchema,
+			},
+		}
+	}
+
 	message, err := a.chat.New(ctx, anthropic.MessageNewParams{
 		Model:     defaultModel,
 		MaxTokens: int64(defaultInferenceMaxTokens),
 		Messages:  conversation,
+		Tools:     anthropicTools,
 	})
 
 	return message, err

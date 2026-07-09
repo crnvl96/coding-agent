@@ -47,7 +47,7 @@ func TestAgent_Run_respondsToUserMessage(t *testing.T) {
 	wantText := "Hi there!"
 	client := &mocketChat{responseText: wantText}
 
-	a := NewAgent(client, getUserMessage)
+	a := NewAgent(client, getUserMessage, nil)
 
 	var stdout bytes.Buffer
 	rescueStdout := os.Stdout
@@ -80,7 +80,7 @@ func TestAgent_Run_handlesEOF(t *testing.T) {
 
 	client := &mocketChat{}
 
-	a := NewAgent(client, getUserMessage)
+	a := NewAgent(client, getUserMessage, nil)
 	err := a.Run(context.Background())
 	if err != nil {
 		t.Fatalf("Run() with immediate EOF returned error: %v", err)
@@ -102,7 +102,7 @@ func TestAgent_Run_returnsInferenceError(t *testing.T) {
 		err: errors.New("inference error"),
 	}
 
-	a := NewAgent(client, getUserMessage)
+	a := NewAgent(client, getUserMessage, nil)
 	err := a.Run(context.Background())
 	if err == nil {
 		t.Fatal("Run() expected an error from inference, got nil")
