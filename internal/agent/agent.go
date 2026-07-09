@@ -19,23 +19,23 @@ const (
 	ansiReset  = "\u001b[0m"
 )
 
-type chatServiceCreator interface {
+type chatCreator interface {
 	New(ctx context.Context, params anthropic.MessageNewParams,
 		opts ...option.RequestOption) (*anthropic.Message, error)
 }
 
 type agent struct {
-	client         chatServiceCreator
+	chat           chatCreator
 	getUserMessage func() (string, bool)
 }
 
 // NewAgent creates an Agent with the given message creator and user message input function.
 func NewAgent(
-	client chatServiceCreator,
+	chat chatCreator,
 	getUserMessage func() (string, bool),
 ) *agent {
 	return &agent{
-		client:         client,
+		chat:           chat,
 		getUserMessage: getUserMessage,
 	}
 }
@@ -79,7 +79,7 @@ func (a *agent) Run(ctx context.Context) error {
 }
 
 func (a *agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
-	message, err := a.client.New(ctx, anthropic.MessageNewParams{
+	message, err := a.chat.New(ctx, anthropic.MessageNewParams{
 		Model:     defaultModel,
 		MaxTokens: int64(defaultInferenceMaxTokens),
 		Messages:  conversation,
