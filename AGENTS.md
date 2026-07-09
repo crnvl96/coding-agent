@@ -2,7 +2,8 @@
 
 ## Go tooling
 
-- **Type checking**: run `go vet ./...` — catches shadowed variables, bad printf verbs, unreachable code, and more. Also run `go build ./...` to verify everything compiles.
+- **Compilation**: run `go build ./...` to verify everything compiles.
+- **Static analysis**: run `go vet ./...` — catches shadowed variables, bad printf verbs, unreachable code, and more.
 - **Formatting**: run `gofumpt -w .` to format all Go source files. Never run plain `go fmt` — always use `gofumpt`.
 
 ## Testing guidelines
