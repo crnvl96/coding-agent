@@ -15,11 +15,16 @@ import (
 	"github.com/adran/coding-agent/internal/agent"
 )
 
+const (
+	defaultBaseURL      = "https://api.deepseek.com/anthropic"
+	defaultAuthFilePath = "auth.json"
+)
+
 func main() {
-	authOpts, _ := loadAuth("auth.json")
+	authOpts, _ := loadAuth(defaultAuthFilePath)
 
 	defaultOpts := []option.RequestOption{
-		option.WithBaseURL("https://api.deepseek.com/anthropic"),
+		option.WithBaseURL(defaultBaseURL),
 	}
 	allOpts := append(defaultOpts, authOpts...)
 	client := anthropic.NewClient(allOpts...)
@@ -40,13 +45,20 @@ func main() {
 	}
 }
 
+func loadAuth(path string) ([]option.RequestOption, string) {
+	f, err := os.Open(path)
+	if err != nil {
+		return nil, "env vars"
+	}
+	defer f.Close()
+	return loadAuthFromReader(f, filepath.Base(path))
+}
+
 type authFile struct {
 	APIKey  string `json:"api_key"`
 	BaseURL string `json:"base_url"`
 }
 
-// loadAuthFromReader parses auth options from any reader — usable in tests
-// without touching the filesystem.
 func loadAuthFromReader(r io.Reader, source string) ([]option.RequestOption, string) {
 	var a authFile
 	if err := json.NewDecoder(r).Decode(&a); err != nil {
@@ -65,13 +77,4 @@ func loadAuthFromReader(r io.Reader, source string) ([]option.RequestOption, str
 	}
 
 	return opts, source
-}
-
-func loadAuth(path string) ([]option.RequestOption, string) {
-	f, err := os.Open(path)
-	if err != nil {
-		return nil, "env vars"
-	}
-	defer f.Close()
-	return loadAuthFromReader(f, filepath.Base(path))
 }

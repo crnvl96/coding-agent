@@ -9,40 +9,46 @@ import (
 )
 
 const (
-	// defaultModel is the LLM model used when none is explicitly configured.
-	defaultModel = "deepseek-v4-pro"
+	defaultModel              = "deepseek-v4-pro"
+	defaultInferenceMaxTokens = 4096
+
+	// ANSI escape sequences for terminal colours in the chat prompt.
+	// ansiReset reverts to the default terminal colour after a coloured label.
+	ansiBlue   = "\u001b[94m"
+	ansiYellow = "\u001b[93m"
+	ansiReset  = "\u001b[0m"
 )
 
-// messageCreator captures the only Anthropic API surface that Agent needs.
-// Accepting a narrow interface instead of *anthropic.Client lets tests swap
-// in a mock with zero network or SDK dependencies.
-type messageCreator interface {
+type chatServiceCreator interface {
 	New(ctx context.Context, params anthropic.MessageNewParams,
 		opts ...option.RequestOption) (*anthropic.Message, error)
 }
 
-type Agent struct {
-	client         messageCreator
+type agent struct {
+	client         chatServiceCreator
 	getUserMessage func() (string, bool)
 }
 
+// NewAgent creates an Agent with the given message creator and user message input function.
 func NewAgent(
-	client messageCreator,
+	client chatServiceCreator,
 	getUserMessage func() (string, bool),
-) *Agent {
-	return &Agent{
+) *agent {
+	return &agent{
 		client:         client,
 		getUserMessage: getUserMessage,
 	}
 }
 
-func (a *Agent) Run(ctx context.Context) error {
+// Run starts the interactive chat loop, reading user messages and printing AI responses.
+// It returns when the user signals EOF (ctrl-d) or when an inference error occurs.
+func (a *agent) Run(ctx context.Context) error {
 	conversation := []anthropic.MessageParam{}
 
 	fmt.Println("Chat with AI (use 'ctrl-c' to quit)")
 
 	for {
-		fmt.Print("\u001b[94mYou\u001b[0m: ")
+		fmt.Print(ansiBlue + "You" + ansiReset + ": ")
 		userInput, ok := a.getUserMessage()
 		if !ok {
 			break
@@ -64,7 +70,7 @@ func (a *Agent) Run(ctx context.Context) error {
 		for _, content := range message.Content {
 			switch content.Type {
 			case "text":
-				fmt.Printf("\u001b[93mAI\u001b[0m: %s\n", content.Text)
+				fmt.Printf(ansiYellow+"AI"+ansiReset+": %s\n", content.Text)
 			}
 		}
 	}
@@ -72,10 +78,10 @@ func (a *Agent) Run(ctx context.Context) error {
 	return nil
 }
 
-func (a *Agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
+func (a *agent) runInference(ctx context.Context, conversation []anthropic.MessageParam) (*anthropic.Message, error) {
 	message, err := a.client.New(ctx, anthropic.MessageNewParams{
 		Model:     defaultModel,
-		MaxTokens: int64(4096),
+		MaxTokens: int64(defaultInferenceMaxTokens),
 		Messages:  conversation,
 	})
 
