@@ -171,7 +171,9 @@ func TestAgent_Run_executesToolAndSendsResult(t *testing.T) {
 	tool := ToolDefinition{
 		Name:        "greet",
 		Description: "Greets someone",
-		InputSchema: GenerateSchema[struct{ Name string `json:"name"` }](),
+		InputSchema: GenerateSchema[struct {
+			Name string `json:"name"`
+		}](),
 		Function: func(input json.RawMessage) (string, error) {
 			capturedInput = input
 			return "Hello, Alice!", nil
