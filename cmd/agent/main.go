@@ -37,7 +37,11 @@ func main() {
 		return scanner.Text(), true
 	}
 
-	agt := agent.NewAgent(&client.Messages, getUserMessage, []agent.ToolDefinition{agent.ReadFileDefinition, agent.ListFilesDefinition})
+	agt := agent.NewAgent(&client.Messages, getUserMessage, []agent.ToolDefinition{
+		agent.ReadFileDefinition,
+		agent.ListFilesDefinition,
+		agent.BashDefinition,
+	})
 
 	if err := agt.Run(context.Background()); err != nil {
 		fmt.Fprintf(os.Stderr, "Error: %s\n", err.Error())
