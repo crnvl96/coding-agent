@@ -42,6 +42,7 @@ func main() {
 		agent.ListFilesDefinition,
 		agent.BashDefinition,
 		agent.EditFileDefinition,
+		agent.CodeSearchDefinition,
 	})
 
 	if err := agt.Run(context.Background()); err != nil {
