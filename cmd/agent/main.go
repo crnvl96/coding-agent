@@ -41,6 +41,7 @@ func main() {
 		agent.ReadFileDefinition,
 		agent.ListFilesDefinition,
 		agent.BashDefinition,
+		agent.EditFileDefinition,
 	})
 
 	if err := agt.Run(context.Background()); err != nil {
