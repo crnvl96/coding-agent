@@ -35,7 +35,7 @@ func ListFiles(input json.RawMessage) (string, error) {
 		dir = in.Path
 	}
 
-	var files []string
+	files := make([]string, 0)
 	err := filepath.Walk(dir, func(path string, info os.FileInfo, err error) error {
 		if err != nil {
 			return err
