@@ -22,14 +22,13 @@ If the file is missing, malformed, or has an empty `api_key`, the agent silently
 
 ## Environment variables
 
-Set these when not using `auth.json`, or when `auth.json` has an empty `api_key`:
+Set this when not using `auth.json`, or when `auth.json` has an empty `api_key`:
 
-| Variable             | Description                                                                                    |
-| -------------------- | ---------------------------------------------------------------------------------------------- |
-| `ANTHROPIC_API_KEY`  | Your DeepSeek API key                                                                          |
-| `ANTHROPIC_BASE_URL` | Anthropic-compatible API endpoint (optional, defaults to `https://api.deepseek.com/anthropic`) |
+| Variable            | Description           |
+| ------------------- | --------------------- |
+| `ANTHROPIC_API_KEY` | Your DeepSeek API key |
 
-The `ANTHROPIC_BASE_URL` default is always applied regardless of auth method. If `auth.json` provides a `base_url`, it overrides the environment variable and the default.
+The base URL can only be customised through `auth.json` (the `base_url` field). There is no environment variable for it. The hardcoded default (`https://api.deepseek.com/anthropic`) is always applied; `auth.json`'s `base_url` overrides it when present.
 
 ## Fallback chain
 

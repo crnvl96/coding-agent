@@ -52,8 +52,9 @@ The agent reads its API key and endpoint from `auth.json` in the working directo
 
 ```bash
 export ANTHROPIC_API_KEY="sk-your-deepseek-api-key"
-export ANTHROPIC_BASE_URL="https://api.deepseek.com/anthropic"  # optional
 ```
+
+The base URL can only be customised through `auth.json` (the `base_url` field). There is no environment variable for it.
 
 ### Fallback chain
 
