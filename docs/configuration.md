@@ -34,9 +34,8 @@ The base URL can only be customised through `auth.json` (the `base_url` field). 
 
 ```
 1. auth.json with non-empty api_key → use api_key (and base_url if present)
-2. ANTHROPIC_API_KEY env var        → use env var key
-3. Neither                          → anthropic-sdk-go looks for ANTHROPIC_API_KEY internally;
-                                       fails if not set
+2. Otherwise                        → SDK reads ANTHROPIC_API_KEY from the environment;
+                                       the request fails if it's not set
 ```
 
 ## Model

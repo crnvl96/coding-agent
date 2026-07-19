@@ -59,8 +59,7 @@ The base URL can only be customised through `auth.json` (the `base_url` field). 
 ### Fallback chain
 
 1. `auth.json` with a non-empty `api_key`
-2. `ANTHROPIC_API_KEY` environment variable
-3. The `anthropic-sdk-go` library's internal lookup (checks `ANTHROPIC_API_KEY`)
+2. Otherwise — the SDK reads `ANTHROPIC_API_KEY` from the environment; the request fails if it's not set
 
 See [docs/configuration.md](docs/configuration.md) for full details.
 
