@@ -16,7 +16,7 @@ It uses **DeepSeek** (via an Anthropic-compatible API) with tool-calling to oper
 
 ## Prerequisites
 
-- **Go 1.26+** (toolchain specified in `go.mod`)
+- **Go 1.26.4 or newer** (as specified in `go.mod`)
 - **A DeepSeek API key** — [platform.deepseek.com](https://platform.deepseek.com/)
 - **ripgrep (`rg`)** — required for the `code_search` tool. Install with your package manager (`apt install ripgrep`, `brew install ripgrep`, etc.)
 
